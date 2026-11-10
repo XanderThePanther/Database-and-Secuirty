@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Temporary Database Access</title>
+
+    <style>
+        body{
+            font-family: Arial, sans-serif;
+            background-color: #473939;
+            padding: 145px;
+        }
+
+        .container{
+            background-color: rgb(164, 164, 164);
+            padding: 45px;
+            max-width: 450px;
+            margin: auto;
+            border: 1px solid #000000;
+            border-radius: 5px;
+        }
+
+        h2{
+            text-align: center;
+        }
+
+        h3{
+            text-align: center;
+        }
+
+        label{
+            display: block;
+            margin-top: 15px;
+        }
+
+        input,
+        textarea,
+        select{
+            width: 100%;
+            padding: 8px;
+            margin-top: 5px;
+            box-sizing: border-box;
+        }
+
+        button{
+            width: 100%;
+            padding: 10px;
+            margin-top: 20px;
+            background-color: #2563eb;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+
+        button:hover{
+            background-color: #6898f9;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+
+        <h2>Temporary Database Access</h2>
+
+        <h3>Request short-lived database credentials.</h3>
+
+        <form action="/request-access" method="POST">
+
+            <label for="username">Engineer Username:</label>
+            <input type="text" id="username" name="username" required>
+
+            <label for="password">Engineer Password:</label>
+            <input type="password" id="password" name="password" required>
+
+            <label for="reason">Reason for Access:</label>
+            <textarea id="reason" name="reason" rows="3" required></textarea>
+
+            <label for="duration">Access Duration:</label>
+            <select id="duration" name="duration">
+                <option value="15">15 Minutes</option>
+                <option value="30">30 Minutes</option>
+                <option value="60">60 Minutes</option>
+            </select>
+
+            <button type="submit">Request Access</button>
+
+        </form>
+
+    </div>
+
+</body>
+
+</html>
