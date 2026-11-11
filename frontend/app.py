@@ -5,6 +5,17 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from markupsafe import escape
 import secrets
 
+import os
+import psycopg2
+
+conn = psycopg2.connect(
+    host="localhost",
+    port=5432,
+    dbname="accessdb",
+    user="broker_web",
+    password=os.environ["BROKER_WEB_PW"],
+)
+
 app = Flask(__name__)
 
 # Temporary engineer login for testing we can remove this later after hooking up to ur database
