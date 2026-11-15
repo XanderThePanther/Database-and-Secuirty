@@ -9,6 +9,8 @@ import re
 from contextlib import closing
 import psycopg2
 from psycopg2 import sql
+import threading
+import time
 
 app = Flask(__name__)
 
@@ -17,6 +19,8 @@ dbPort = int(os.environ.get("DB_PORT", "5432"))
 
 tempName = re.compile(r"^temp_[0-9a-f]{8}$")
 tier = "db_read_only"
+
+deletionInterval = 30
 
 #Internal helper method to check environment variable
 def _env(name):
@@ -102,6 +106,36 @@ def _drop_login_quietly(username):
     except Exception:
         pass
 
+def cleanup_expired_access():
+    """Find grants whose time is up but are still marked active, drop their
+    logins, and mark them expired."""
+    try:
+        with closing(_db_conn()) as conn, conn.cursor() as cur:
+            cur.execute(
+                "SELECT id, temp_username FROM broker.access_grants "
+                "WHERE status = 'active' AND expires_at <= now()"
+            )
+            expired = cur.fetchall()
+    except Exception:
+        return
+
+    for grant_id, username in expired:
+        _drop_login_quietly(username)
+        try:
+            with closing(_db_conn()) as conn, conn, conn.cursor() as cur:
+                cur.execute(
+                    "UPDATE broker.access_grants "
+                    "SET status = 'expired', ended_at = now(), ended_by = 'auto' "
+                    "WHERE id = %s AND status = 'active'",
+                    (grant_id,)
+                )
+        except Exception:
+            pass
+
+def _cleanup_loop():
+    while True:
+        cleanup_expired_access()
+        time.sleep(deletionInterval)
 
 # Display HTML page
 @app.route("/")
@@ -167,5 +201,63 @@ def request_access():
     """
 
 
+#Order look up html page
+@app.route("/orders")
+def orders_page():
+    return render_template("orders.html")
+
+
+@app.route("/order-lookup", methods=["POST"])
+def order_lookup():
+    temp_user = request.form.get("username", "").strip()
+    temp_pass = request.form.get("password", "")
+    order_number = request.form.get("order_number", "").strip()
+
+    if not tempName.match(temp_user):
+        return "Invalid login.", 401
+
+    if not order_number:
+        return "Order number is required.", 400
+
+    # Connect AS the temp login itself -- Postgres rejects this outright if the
+    # password is wrong, the role expired (VALID UNTIL), or it's been dropped.
+    try:
+        conn = psycopg2.connect(host=dbHost, port=dbPort, dbname="accessdb",
+                                 user=temp_user, password=temp_pass,
+                                 connect_timeout=5)
+    except Exception:
+        return "Invalid login, or your temporary access has expired.", 401
+
+    try:
+        with closing(conn) as conn, conn.cursor() as cur:
+            cur.execute(
+                "SELECT order_number, customer_name, item, status, amount, order_date "
+                "FROM broker.orders WHERE order_number = %s",
+                (order_number,))
+            row = cur.fetchone()
+    except Exception:
+        return "You don't have permission to read orders.", 403
+
+    if row is None:
+        return "No order found with that number.", 404
+
+    order_number, customer_name, item, status, amount, order_date = row
+
+    return f"""
+    <h2>Order Lookup</h2>
+
+    <p><b>Order #:</b> {escape(order_number)}</p>
+    <p><b>Customer:</b> {escape(customer_name)}</p>
+    <p><b>Item:</b> {escape(item)}</p>
+    <p><b>Status:</b> {escape(status)}</p>
+    <p><b>Amount:</b> ${amount}</p>
+    <p><b>Order Date:</b> {order_date.strftime('%Y-%m-%d')}</p>
+
+    <a href="/orders">Return to Order Lookup</a>
+    """
+
+
 if __name__ == "__main__":
+    if os.environ.get("WERKZEUG_RUN_MAIN") == "true" or not app.debug:
+        threading.Thread(target=_cleanup_loop, daemon=True).start()
     app.run(debug=True)

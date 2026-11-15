@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Order Lookup</title>
+
+    <style>
+        body{
+            font-family: Arial, sans-serif;
+            background-color: #473939;
+            padding: 145px;
+        }
+
+        .container{
+            background-color: rgb(164, 164, 164);
+            padding: 45px;
+            max-width: 450px;
+            margin: auto;
+            border: 1px solid #000000;
+            border-radius: 5px;
+        }
+
+        h2{
+            text-align: center;
+        }
+
+        h3{
+            text-align: center;
+        }
+
+        label{
+            display: block;
+            margin-top: 15px;
+        }
+
+        input,
+        textarea,
+        select{
+            width: 100%;
+            padding: 8px;
+            margin-top: 5px;
+            box-sizing: border-box;
+        }
+
+        button{
+            width: 100%;
+            padding: 10px;
+            margin-top: 20px;
+            background-color: #2563eb;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+
+        button:hover{
+            background-color: #6898f9;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+
+        <h2>Order Lookup</h2>
+
+        <h3>Use your temporary database credentials to look up an order.</h3>
+
+        <form action="/order-lookup" method="POST">
+
+            <label for="username">Temporary Username:</label>
+            <input type="text" id="username" name="username" required>
+
+            <label for="password">Temporary Password:</label>
+            <input type="password" id="password" name="password" required>
+
+            <label for="order_number">Order Number:</label>
+            <input type="text" id="order_number" name="order_number" required>
+
+            <button type="submit">Look Up Order</button>
+
+        </form>
+
+    </div>
+
+</body>
+
+</html>
