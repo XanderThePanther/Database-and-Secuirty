@@ -1,4 +1,3 @@
-
 from flask import Flask, render_template, request
 from datetime import datetime, timedelta, timezone
 from werkzeug.security import generate_password_hash, check_password_hash
