@@ -167,7 +167,7 @@ def request_access():
     except ValueError:
         return "Invalid duration.", 400
 
-    if duration not in (15, 30, 60):
+    if duration not in (1, 15, 30, 60):
         return "Invalid duration.", 400
 
     # Generate credentials and expiration
