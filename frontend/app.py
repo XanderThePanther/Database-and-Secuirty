@@ -167,7 +167,7 @@ def request_access():
     except ValueError:
         return "Invalid duration.", 400
 
-    if duration not in (1, 15, 30, 60):
+    if duration not in (1,15, 30, 60):
         return "Invalid duration.", 400
 
     # Generate credentials and expiration
@@ -209,9 +209,13 @@ def orders_page():
 
 @app.route("/order-lookup", methods=["POST"])
 def order_lookup():
+    engineer_id = request.form.get("engineer_id", "").strip()
     temp_user = request.form.get("username", "").strip()
     temp_pass = request.form.get("password", "")
     order_number = request.form.get("order_number", "").strip()
+
+    if not engineer_id:
+            return "Engineer ID is required.", 400
 
     if not tempName.match(temp_user):
         return "Invalid login.", 401
@@ -219,11 +223,25 @@ def order_lookup():
     if not order_number:
         return "Order number is required.", 400
 
+
+
+    try:
+        with closing(_db_conn()) as conn, conn, conn.cursor() as cur:
+            cur.execute(
+                "SELECT 1 FROM broker.access_grants "
+                "WHERE temp_username = %s AND engineer_id = %s",
+                (temp_user, engineer_id))
+            match = cur.fetchone()
+    except Exception:
+        return "Could not verify login.", 500
+
+    if match is None:
+        return "Engineer ID does not match this temporary login.", 401
+
     # Connect AS the temp login itself -- Postgres rejects this outright if the
     # password is wrong, the role expired (VALID UNTIL), or it's been dropped.
     try:
-        conn = psycopg2.connect(host=dbHost, port=dbPort, dbname="accessdb",
-                                 user=temp_user, password=temp_pass,
+        conn = psycopg2.connect(host=dbHost, port=dbPort, dbname="accessdb",user=temp_user, password=temp_pass,
                                  connect_timeout=5)
     except Exception:
         return "Invalid login, or your temporary access has expired.", 401
